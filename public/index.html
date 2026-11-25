@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f2eb">
+  <meta name="description" content="Duello online per due giocatori. Punta in segreto, conquista l'iniziativa e allinea cinque pietre.">
+  <title>Controluce — Duello online</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="wrap topbar">
+    <a class="wordmark" href="/" aria-label="Controluce, pagina iniziale"><span class="mark" aria-hidden="true"></span> CONTROLUCE</a>
+    <div class="top-actions">
+      <button id="copy" class="quiet" type="button" hidden>Copia invito</button>
+      <button id="rules" class="quiet" type="button">Come si gioca</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="intro">
+      <div>
+        <p class="eyebrow" id="eyebrow">STRATEGIA PER DUE</p>
+        <h1 id="headline">La partita si gioca<br>su due fronti.</h1>
+      </div>
+      <p id="description">Scegli la tua puntata in segreto.<br>Prendi l’iniziativa. Allinea cinque pietre.</p>
+    </div>
+
+    <div class="layout">
+      <section class="table" aria-labelledby="board-title">
+        <div class="section-heading">
+          <h2 id="board-title">Tabellone</h2>
+          <span id="round">11 × 11</span>
+        </div>
+        <div class="board-frame">
+          <div id="board" class="board" role="group" aria-label="Incroci del tabellone"></div>
+        </div>
+        <div class="board-caption"><span id="board-status" role="status">Cinque pietre in linea per vincere.</span><span id="move-count" aria-hidden="true"></span></div>
+      </section>
+
+      <aside>
+        <section class="panel" id="lobby">
+          <h2>Gioca con un amico</h2>
+          <p>Crea una stanza e condividi il link. Se hai già un codice, puoi entrare qui.</p>
+          <form id="lobby-form">
+            <label for="nickname">Il tuo nome</label>
+            <input id="nickname" maxlength="24" placeholder="Es. Matteo" autocomplete="nickname">
+            <button id="create" class="primary" type="button">Crea stanza <span class="arrow" aria-hidden="true"></span></button>
+            <div class="join">
+              <label for="code">Codice stanza</label>
+              <div class="join-row">
+                <input id="code" maxlength="6" placeholder="ABC234" autocapitalize="characters" autocomplete="off" spellcheck="false">
+                <button class="secondary" type="submit">Entra</button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <div id="game-panel" hidden>
+          <section class="panel scores" aria-label="Giocatori">
+            <div class="player">
+              <span id="own-stone" class="stone" aria-hidden="true"></span>
+              <div><strong id="own-name"></strong><small>Tu</small></div>
+              <div class="total"><strong id="own-chips"></strong><small>fiches</small></div>
+            </div>
+            <div class="player">
+              <span id="other-stone" class="stone" aria-hidden="true"></span>
+              <div><strong id="other-name"></strong><small id="other-status"></small></div>
+              <div class="total"><strong id="other-chips"></strong><small>fiches</small></div>
+            </div>
+          </section>
+          <section class="panel action">
+            <h2 id="action-title"></h2>
+            <p id="action-description"></p>
+            <div id="bid-controls" hidden>
+              <div id="bid-values" class="bid-values" role="group" aria-label="Importo della puntata"></div>
+              <button id="submit-bid" class="primary" type="button">Conferma puntata</button>
+            </div>
+            <button id="invite" class="primary" type="button" hidden>Copia link d’invito</button>
+            <p id="auction" class="auction" hidden></p>
+          </section>
+          <div class="reset-wrap">
+            <button id="reset" class="quiet" type="button">Ricomincia partita</button>
+            <p id="reset-status" role="status"></p>
+          </div>
+        </div>
+        <p id="notice" class="notice" role="status"></p>
+      </aside>
+    </div>
+  </main>
+
+  <dialog id="rules-dialog" aria-labelledby="rules-title">
+    <div class="dialog-heading">
+      <h2 id="rules-title">Come si gioca</h2>
+      <form method="dialog"><button class="quiet" value="close" aria-label="Chiudi le regole">×</button></form>
+    </div>
+    <ol>
+      <li>Partite con 18 fiches virtuali a testa. A ogni round scegliete in segreto da 0 a 5 fiches, entro il vostro saldo.</li>
+      <li>Le puntate si rivelano insieme. Chi punta di più paga la propria puntata e piazza per primo. A parità, la precedenza alterna tra nero e bianco a ogni round, a partire dal nero.</li>
+      <li>Ogni giocatore piazza una pietra su un incrocio libero. Dopo il secondo piazzamento inizia un nuovo round.</li>
+      <li>Vince chi allinea almeno cinque pietre del proprio colore in orizzontale, verticale o diagonale. Se il tabellone si riempie senza una linea vincente, è pareggio.</li>
+    </ol>
+    <p>Per ricominciare, entrambi devono confermare. A ogni nuova partita si scambiano i colori.</p>
+  </dialog>
+</body>
+</html>
