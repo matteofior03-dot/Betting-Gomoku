@@ -1,6 +1,6 @@
 # Controluce
 
-Gioco originale per due persone. Il tabellone 11 × 11 è condiviso, mentre ogni giocatore apre la propria postazione e invia la puntata in privato.
+Gioco originale per due persone. Il tabellone 11 × 11 è condiviso, mentre ogni giocatore apre la propria postazione e invia in privato tre puntate per round.
 
 ## Avvio in locale
 
@@ -25,13 +25,18 @@ Il server usa la porta indicata da Render in `PORT` e tiene le stanze in memoria
 
 ## Regole
 
-- Ogni giocatore parte con 18 fiches virtuali.
-- A inizio round i giocatori puntano in segreto da 0 a 5 fiches, entro il proprio saldo. Chi punta di più paga la propria puntata e sceglie per primo dove piazzare. A parità, la precedenza alterna tra i colori a ogni round, partendo dal nero.
-- Ogni giocatore piazza una pedina su un incrocio libero. La partita termina appena un giocatore allinea almeno cinque pedine dello stesso colore in orizzontale, verticale o diagonale. Se la griglia si riempie senza una linea vincente, la partita è pari.
-- Entrambi possono chiedere di ricominciare. Dopo la doppia conferma il server svuota il tabellone, ripristina le fiches e scambia i colori nella stessa stanza.
+1. Il giocatore 1 inizia proponendo tre incroci liberi e consecutivi, in orizzontale, verticale o diagonale. Il ruolo di proponente si alterna a ogni round.
+2. Ciascuno ha dieci gettoni a round e invia in segreto una puntata di almeno un gettone per ogni incrocio. La somma delle tre puntate deve essere al massimo dieci e i gettoni avanzati non si accumulano. Per esempio, `5 + 3 + 2` è una ripartizione valida.
+3. Le tre puntate si rivelano insieme. Per ogni incrocio il valore più alto conquista la posizione. In caso di parità, la posizione va a chi non ha proposto quel round.
+4. Dopo aver assegnato tutte e tre le posizioni, si controlla se qualcuno ha una linea di esattamente cinque pedine consecutive del proprio colore, in orizzontale, verticale o diagonale. Una fila di sei o più non conta. Se entrambi completano una linea valida nello stesso round oppure non resta alcun gruppo valido di tre caselle libere, è pareggio.
+5. Dopo la doppia conferma di reset il server svuota il tabellone, riparte dal giocatore 1 e scambia i colori nella stessa stanza.
+
+## Aggiornare un servizio Render esistente
+
+Carica i file aggiornati mantenendo la stessa struttura e fai il commit sul branch collegato a Render. Se il deploy automatico è attivo partirà al commit. In alternativa, dal servizio seleziona **Manual Deploy → Deploy latest commit**. Il servizio conserva il suo indirizzo.
 
 ## Struttura
 
-- `game.js` gestisce fasi, puntate, turni, vittoria e reset.
+- `game.js` gestisce la proposta, le puntate, l’assegnazione delle posizioni, la vittoria e il reset.
 - `server.js` serve l’interfaccia, gestisce le stanze e assegna credenziali private per ciascuna postazione.
-- `public/` contiene l’interfaccia web, sincronizzata ogni secondo con il server. Le puntate in corso sono visibili solo a chi le ha fatte, fino alla rivelazione.
+- `public/` contiene l’interfaccia web, sincronizzata ogni secondo con il server. Le puntate in corso sono visibili solo a chi le ha fatte, fino alla rivelazione simultanea.

@@ -48,16 +48,14 @@ h1 { font: 400 clamp(2.55rem, 6.5vw, 4.65rem)/.96 Georgia, serif; letter-spacing
 .cell:nth-last-child(-n + 11)::after { bottom: 50%; }
 .cell:focus-visible { outline-offset: -2px; border-radius: 4px; }
 .cell.center:not(.occupied) span { display: block; width: 6px; height: 6px; margin: auto; border-radius: 50%; background: var(--green); }
-.stone, .cell.occupied span, .cell[aria-disabled="false"]:is(:hover, :focus-visible) span { display: block; aspect-ratio: 1; border-radius: 50%; border: 1px solid #111916; background: radial-gradient(circle at 30% 25%, #4d5750, #222b26 65%); }
+.stone, .cell.occupied span { display: block; aspect-ratio: 1; border-radius: 50%; border: 1px solid #111916; background: radial-gradient(circle at 30% 25%, #4d5750, #222b26 65%); }
 .stone { width: 24px; flex-shrink: 0; }
-.cell.occupied span, .cell[aria-disabled="false"]:is(:hover, :focus-visible) span { width: 74%; max-width: 33px; margin: auto; box-shadow: 0 2px 3px #22362c42; }
-.stone.white, .cell.occupied.white span, .board.white-turn .cell[aria-disabled="false"]:is(:hover, :focus-visible) span { border-color: #a5aa9c; background: radial-gradient(circle at 28% 25%, #fff, #edeadd 72%); }
+.cell.occupied span { width: 74%; max-width: 33px; margin: auto; box-shadow: 0 2px 3px #22362c42; }
+.stone.white, .cell.occupied.white span { border-color: #a5aa9c; background: radial-gradient(circle at 28% 25%, #fff, #edeadd 72%); }
 .cell[aria-disabled="true"] { cursor: default; }
-.cell[aria-disabled="false"]:is(:hover, :focus-visible) span { opacity: .52; }
 .cell.last span { outline: 2px solid #587d59; outline-offset: 2px; }
 .cell.winning span { outline: 2px solid #8b6819; outline-offset: 2px; }
 .board-caption { display: flex; justify-content: space-between; gap: 12px; margin-top: 11px; font-size: .78rem; color: #e0e7d9; }
-#move-count { white-space: nowrap; }
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: 15px; padding: 20px; margin-bottom: 12px; }
 .panel p, dialog p, dialog li { font-size: .9rem; line-height: 1.5; color: var(--muted); }
 .panel p { margin: 9px 0 16px; }
@@ -80,11 +78,22 @@ input { display: block; width: 100%; min-width: 0; padding: 10px 11px; border-ra
 .player small { display: block; margin-top: 2px; color: var(--muted); font-size: .73rem; }
 .total { text-align: right; }
 .total strong { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
-.bid-values { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; margin-bottom: 10px; }
-.bid-values button { padding: 0; min-height: 38px; border: 1px solid #bfc9bd; border-radius: 7px; color: var(--ink); background: var(--card); font-weight: 650; }
-.bid-values button:disabled { opacity: .35; }
-.bid-values button[aria-pressed="true"] { background: var(--yellow); border-color: #987b38; }
-.panel .auction { padding-top: 12px; margin: 14px 0 0; border-top: 1px solid var(--line); font-size: .8rem; }
+.bid-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.bid-values input { padding-inline: 7px; }
+.panel .budget { margin: 0 0 10px; font-size: .82rem; font-weight: 650; }
+.budget.invalid { color: #8d3127; }
+.result { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+.result h3 { font-size: .86rem; margin: 0 0 6px; }
+.result table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+.result :is(th, td) { text-align: left; padding: 4px 3px; }
+.result th { color: var(--muted); font-weight: 650; }
+.result td { border-top: 1px solid var(--line); }
+.cell[aria-disabled="false"]:hover { background: #243e3220; }
+.cell.target span, .cell.target.center span {
+  display: grid; place-items: center; width: 76%; height: auto; max-width: 33px;
+  aspect-ratio: 1; margin: auto; border: 1px solid #8b6819; border-radius: 50%;
+  background: var(--yellow); color: var(--ink); font-size: .82rem; font-weight: 750;
+}
 .reset-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
 .reset-wrap p, .notice { margin: 3px 0; font-size: .82rem; color: var(--muted); }
 .notice:not(:empty) { margin: 9px 0 0; }

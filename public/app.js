@@ -4,7 +4,8 @@ const CODE = /^[A-HJ-NP-Z2-9]{6}$/;
 const board = byId('board');
 const notice = byId('notice');
 const cells = [];
-const bidButtons = [];
+const bidInputs = [byId('bid-1'), byId('bid-2'), byId('bid-3')];
+const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
 let session;
 let state;
 let snapshot;
@@ -12,7 +13,7 @@ let busy = false;
 let offline = false;
 let pollActive = false;
 let requestVersion = 0;
-let selection = 0;
+let selection = [];
 let focusCell = 60;
 
 function say(message, isError = false) {
@@ -59,7 +60,10 @@ function roomPath(operation, code = session.code) {
 function apply(next) {
   const serialized = JSON.stringify(next);
   if (serialized === snapshot) return false;
-  if (next.id !== state?.id || next.round !== state?.round) selection = 0;
+  if (next.id !== state?.id || next.round !== state?.round) {
+    selection = [];
+    bidInputs.forEach(input => { input.value = 1; });
+  }
   if (state && next.id !== state.id) say('Nuova partita. I colori sono stati scambiati.');
   state = next;
   snapshot = serialized;
@@ -79,31 +83,29 @@ function paint() {
     byId('headline').innerHTML = 'La partita si gioca<br>su due fronti.';
     byId('description').hidden = false;
     put('round', '11 × 11');
-    put('board-status', 'Cinque pietre in linea per vincere.');
-    put('move-count', '');
+    put('board-status', 'Esattamente cinque pietre in linea per vincere.');
     return;
   }
 
-  const { players, seat, code, phase, number, round, chips, moves, winner, turn, resetVotes } = state;
+  const { players, seat, code, phase, number, round, board: stones, winner, proposer, resetVotes } = state;
   const own = players[seat];
   const other = players[1 - seat];
-  const canMove = Boolean(other && phase === 'place' && turn === seat && !busy && !offline);
-  paintBoard(canMove, players);
+  const mayPropose = Boolean(other && phase === 'propose' && proposer === seat);
+  paintBoard(mayPropose && !busy && !offline, players);
 
   put('eyebrow', `STANZA ${code}`);
   put('headline', 'Sala di gioco');
   byId('description').hidden = true;
   put('round', `Partita ${number} · Round ${round}`);
-  put('move-count', moves ? `Mosse ${moves}` : '');
   put('own-name', own.name);
   put('other-name', other?.name ?? 'Posto libero');
-  put('own-chips', chips[seat]);
-  put('other-chips', other ? chips[1 - seat] : '–');
+  put('own-chips', stones.filter(owner => owner === seat).length);
+  put('other-chips', other ? stones.filter(owner => owner === 1 - seat).length : '–');
   byId('own-stone').className = `stone ${own.color}`;
   byId('other-stone').className = `stone ${other?.color ?? (own.color === 'black' ? 'white' : 'black')}`;
   const bidding = other && phase === 'bid';
   put('other-status', !other ? 'In attesa di un giocatore' :
-    bidding ? (state.opponentReady ? 'Puntata confermata' : 'Sta scegliendo la puntata') : 'Avversario');
+    bidding ? (state.opponentReady ? 'Puntate confermate' : 'Sta puntando') : 'Avversario');
 
   let title;
   let detail;
@@ -114,17 +116,21 @@ function paint() {
     boardStatus = 'In attesa del secondo giocatore';
   } else if (phase === 'finished') {
     title = winner === null ? 'Pareggio' : winner === seat ? 'Hai vinto' : `Vince ${other.name}`;
-    detail = winner === null ? 'Il tabellone è pieno.' : 'Cinque pietre consecutive.';
+    detail = {
+      'both-lines': 'Avete completato una linea valida nello stesso round.',
+      'no-space': 'Non restano tre incroci liberi consecutivi.',
+      line: 'Esattamente cinque pietre consecutive.'
+    }[state.finishReason];
     boardStatus = title;
-  } else if (phase === 'place') {
-    title = turn === seat ? 'Tocca a te' : `Tocca a ${other.name}`;
-    detail = turn === seat ? 'Scegli un incrocio libero sul tabellone.' : 'Attendi il piazzamento del tuo avversario.';
-    boardStatus = title;
+  } else if (phase === 'propose') {
+    title = mayPropose ? 'Scegli tre caselle' : `Tocca a ${other.name}`;
+    detail = mayPropose ? 'Seleziona tre incroci liberi consecutivi. Tocca di nuovo un incrocio per deselezionarlo.' :
+      'Il tuo avversario sta scegliendo le tre caselle su cui puntare.';
+    boardStatus = mayPropose ? `Caselle selezionate: ${selection.length}/3` : 'Scelta delle caselle in corso';
   } else {
-    title = state.ownBid === null ? 'Punta per l’iniziativa' : 'Puntata confermata';
-    detail = state.ownBid === null ?
-      'La puntata resta segreta finché entrambi avete scelto.' :
-      `Hai puntato ${state.ownBid} fiches. Attendi la scelta dell’avversario.`;
+    title = state.ownBid === null ? 'Punta sulle tre caselle' : 'Puntate confermate';
+    detail = state.ownBid === null ? 'Distribuisci fino a 10 gettoni. Le puntate si rivelano insieme.' :
+      `Hai puntato ${state.ownBid.join(' / ')} gettoni. Attendi l’avversario.`;
     boardStatus = 'Puntate in corso';
   }
 
@@ -132,20 +138,16 @@ function paint() {
   put('action-description', detail);
   put('board-status', offline ? 'Sincronizzazione in corso…' : boardStatus);
   byId('invite').hidden = Boolean(other);
+  const proposal = byId('submit-proposal');
+  proposal.hidden = !mayPropose;
+  proposal.disabled = busy || offline || selection.length !== 3;
   byId('bid-controls').hidden = !bidding || state.ownBid !== null;
-  bidButtons.forEach((button, value) => {
-    button.disabled = busy || offline || value > state.maxBid;
-    button.setAttribute('aria-pressed', String(value === selection));
-  });
-  byId('submit-bid').disabled = busy || offline;
-  byId('auction').hidden = !state.auction;
-  if (state.auction) {
-    const { bids, winner: first, tie } = state.auction;
-    const label = phase === 'bid' ? 'Round precedente' : 'Iniziativa';
-    const initiative = `${bids[seat]} a ${bids[1 - seat]}${tie ? ' (parità)' : ''}`;
-    put('auction', `${label} · ${initiative} · ${first === seat ? 'hai iniziato tu' : `ha iniziato ${other.name}`}`);
+  if (bidding) {
+    state.targets.forEach((cell, index) => put(`bid-label-${index + 1}`, `${index + 1} · ${coordinate(cell)}`));
+    updateBudget();
   }
 
+  paintResult();
   const reset = byId('reset');
   reset.hidden = !other;
   reset.disabled = busy || offline;
@@ -154,20 +156,83 @@ function paint() {
     resetVotes[1 - seat] ? 'L’avversario ha chiesto di ricominciare.' : '');
 }
 
-function paintBoard(canMove, players) {
+function coordinate(index) {
+  return `${String.fromCharCode(65 + index % SIZE)}${Math.floor(index / SIZE) + 1}`;
+}
+
+function eligibleCells() {
+  const eligible = new Set(selection);
+  if (selection.length === 3) return eligible;
+  state.board.forEach((value, index) => {
+    if (value !== null) return;
+    const row = Math.floor(index / SIZE);
+    const col = index % SIZE;
+    for (const [dr, dc] of directions) {
+      const endRow = row + dr * 2;
+      const endCol = col + dc * 2;
+      if (endRow >= SIZE || endCol >= SIZE || endCol < 0) continue;
+      const step = dr * SIZE + dc;
+      const trio = [index, index + step, index + step * 2];
+      if (trio.every(cell => state.board[cell] === null) && selection.every(cell => trio.includes(cell))) {
+        trio.forEach(cell => eligible.add(cell));
+      }
+    }
+  });
+  return eligible;
+}
+
+function paintBoard(canPropose, players) {
   const colors = players.map(player => player.color);
-  board.classList.toggle('white-turn', canMove && colors[state.seat] === 'white');
+  const eligible = canPropose ? eligibleCells() : new Set();
+  const targets = state?.phase === 'bid' ? state.targets : canPropose ? selection : [];
+  const last = state?.result?.awards.map(award => award.cell) ?? [];
+  const winning = new Set(state?.winningLines.flat());
   cells.forEach((button, index) => {
     const occupant = state?.board[index] ?? null;
     const color = colors[occupant];
+    const target = targets.indexOf(index);
     button.classList.toggle('occupied', occupant !== null);
     button.classList.toggle('white', color === 'white');
-    button.classList.toggle('last', state?.lastMove === index);
-    button.classList.toggle('winning', Boolean(state?.winningLine.includes(index)));
-    button.setAttribute('aria-disabled', String(!canMove || occupant !== null));
-    const position = `${String.fromCharCode(65 + index % SIZE)}${Math.floor(index / SIZE) + 1}`;
-    button.setAttribute('aria-label', `${position}, ${occupant === null ? 'libero' : color === 'white' ? 'bianco' : 'nero'}`);
+    button.classList.toggle('last', last.includes(index));
+    button.classList.toggle('winning', winning.has(index));
+    button.classList.toggle('target', target !== -1);
+    button.firstElementChild.textContent = target === -1 ? '' : target + 1;
+    button.setAttribute('aria-disabled', String(!eligible.has(index)));
+    const label = target !== -1 ? `casella ${target + 1}` : ({ white: 'bianco', black: 'nero' }[color] ?? 'libero');
+    button.setAttribute('aria-label', `${coordinate(index)}, ${label}`);
   });
+}
+
+function bidValues() {
+  return bidInputs.map(input => input.valueAsNumber);
+}
+
+function updateBudget() {
+  const values = bidValues();
+  const valid = values.every(value => Number.isInteger(value) && value >= 1 && value <= state.budget);
+  const total = values.reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
+  const remaining = state.budget - total;
+  put('budget', remaining < 0 ? `Riduci di ${-remaining} gettoni` : `Gettoni disponibili: ${remaining} / ${state.budget}`);
+  byId('budget').classList.toggle('invalid', remaining < 0);
+  byId('submit-bid').disabled = busy || offline || !valid || remaining < 0;
+  bidInputs.forEach(input => { input.disabled = busy || offline; });
+}
+
+function paintResult() {
+  const { result, seat } = state;
+  byId('result').hidden = !result;
+  if (!result) return;
+  put('result-title', `Esito round ${result.round}`);
+  const rows = result.awards.map(({ cell, bids, owner }) => {
+    const row = document.createElement('tr');
+    for (const value of [coordinate(cell), bids[seat], bids[1 - seat], owner === seat ? 'Te' : 'Rivale']) {
+      const data = document.createElement('td');
+      data.textContent = value;
+      row.append(data);
+    }
+    return row;
+  });
+  byId('result-rows').replaceChildren(...rows);
 }
 
 async function sync() {
@@ -266,7 +331,9 @@ for (let index = 0; index < SIZE * SIZE; index++) {
     button.tabIndex = 0;
   });
   button.addEventListener('click', () => {
-    if (button.getAttribute('aria-disabled') === 'false') act('move', { cell: index, moves: state.moves });
+    if (button.getAttribute('aria-disabled') !== 'false') return;
+    selection = selection.includes(index) ? selection.filter(cell => cell !== index) : [...selection, index];
+    paint();
   });
   cells.push(button);
   board.append(button);
@@ -286,18 +353,7 @@ board.addEventListener('keydown', event => {
   cells[adjacent[event.key]].focus();
 });
 
-for (let value = 0; value <= 5; value++) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.textContent = value;
-  button.setAttribute('aria-label', `${value} fiches`);
-  button.addEventListener('click', () => {
-    selection = value;
-    paint();
-  });
-  bidButtons.push(button);
-  byId('bid-values').append(button);
-}
+bidInputs.forEach(input => input.addEventListener('input', updateBudget));
 
 byId('lobby-form').addEventListener('submit', event => {
   event.preventDefault();
@@ -307,7 +363,8 @@ byId('create').addEventListener('click', () => lobby(false));
 byId('rules').addEventListener('click', () => byId('rules-dialog').showModal());
 byId('copy').addEventListener('click', copyInvite);
 byId('invite').addEventListener('click', copyInvite);
-byId('submit-bid').addEventListener('click', () => act('bid', { value: selection }));
+byId('submit-proposal').addEventListener('click', () => act('propose', { cells: selection }));
+byId('submit-bid').addEventListener('click', () => act('bid', { values: bidValues() }));
 byId('reset').addEventListener('click', () => act('reset', { vote: !state.resetVotes[state.seat] }));
 
 const initialCode = new URLSearchParams(location.search).get('stanza')?.toUpperCase();
