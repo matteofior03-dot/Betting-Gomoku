@@ -61,7 +61,7 @@
           <section class="panel scores" aria-label="Giocatori">
             <div class="player">
               <span id="own-stone" class="stone" aria-hidden="true"></span>
-              <div><strong id="own-name"></strong><small>Tu</small></div>
+              <div><strong id="own-name"></strong><small id="own-status">Tu</small></div>
               <div class="total"><strong id="own-chips"></strong><small>pedine</small></div>
             </div>
             <div class="player">
@@ -84,13 +84,6 @@
               <button id="submit-bid" class="primary" type="button">Conferma puntate</button>
             </div>
             <button id="invite" class="primary" type="button" hidden>Copia link d’invito</button>
-            <div id="result" class="result" hidden>
-              <h3 id="result-title"></h3>
-              <table aria-labelledby="result-title">
-                <thead><tr><th>Casella</th><th>Tu</th><th>Rivale</th><th>Va a</th></tr></thead>
-                <tbody id="result-rows"></tbody>
-              </table>
-            </div>
           </section>
           <div class="reset-wrap">
             <button id="reset" class="quiet" type="button">Ricomincia partita</button>
@@ -109,8 +102,8 @@
     </div>
     <ol>
       <li>Il giocatore 1 propone tre incroci liberi e consecutivi, in orizzontale, verticale o diagonale. A ogni round si alterna chi propone.</li>
-      <li>Ognuno punta in segreto almeno un gettone su ciascun incrocio, per un massimo di dieci gettoni in totale. A ogni nuovo round si torna a dieci.</li>
-      <li>Le puntate si rivelano insieme. Ogni incrocio prende il colore di chi ha puntato di più in quel punto. A parità se lo aggiudica chi non ha proposto le caselle del round.</li>
+      <li>Si parte con 10 fiches a testa. Nei round successivi si ricevono 10 fiches più la metà di quelle avanzate nel round precedente, arrotondata per difetto. Si punta in segreto da 1 a 10 fiches per incrocio, entro il proprio budget.</li>
+      <li>Ogni incrocio prende il colore di chi ha puntato di più. A parità lo conquista chi non ha proposto le caselle. Sul tabellone si vedono le pedine assegnate.</li>
       <li>Vince chi alla fine del round ha una linea di esattamente cinque pedine consecutive del proprio colore. Le linee di sei o più pedine non valgono.</li>
     </ol>
     <p>È pareggio se entrambi formano una linea valida nello stesso round o se non restano tre incroci liberi consecutivi. Per ricominciare, entrambi devono confermare.</p>

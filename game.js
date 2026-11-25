@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 
 export const SIZE = 11;
-export const BUDGET = 10;
+const BASE_BUDGET = 10;
+const MAX_BID = 10;
 const DIRECTIONS = [[0, 1], [1, 0], [1, 1], [1, -1]];
 
 export function newMatch(number = 1) {
@@ -10,6 +11,7 @@ export function newMatch(number = 1) {
     number,
     board: Array(SIZE * SIZE).fill(null),
     bids: [null, null],
+    budgets: [BASE_BUDGET, BASE_BUDGET],
     resetVotes: [false, false],
     phase: 'propose',
     round: 1,
@@ -18,22 +20,23 @@ export function newMatch(number = 1) {
     winner: null,
     finishReason: null,
     winningLines: [[], []],
-    result: null
+    lastTargets: []
   };
 }
 
 export function view(room, seat) {
-  const { bids, ...publicMatch } = room.match;
+  const { bids, budgets, ...publicMatch } = room.match;
   return {
     ...publicMatch,
-    budget: BUDGET,
+    budget: budgets[seat],
+    maxBid: MAX_BID,
     code: room.code,
     seat,
     players: room.players.map((player, index) => ({
       name: player.name,
       color: index === (room.match.number - 1) % 2 ? 'black' : 'white'
     })),
-    ownBid: bids[seat],
+    ownReady: bids[seat] !== null,
     opponentReady: bids[1 - seat] !== null
   };
 }
@@ -74,26 +77,27 @@ function propose(match, seat, cells) {
 function bid(match, seat, values) {
   if (match.phase !== 'bid' || match.bids[seat] !== null) return 'La puntata è già chiusa.';
   if (!Array.isArray(values) || values.length !== 3 ||
-      !values.every(value => Number.isInteger(value) && value >= 1 && value <= BUDGET) ||
-      values.reduce((total, value) => total + value, 0) > BUDGET) {
-    return 'Punta almeno un gettone per incrocio e usane al massimo 10 in totale.';
+      !values.every(value => Number.isInteger(value) && value >= 1 && value <= MAX_BID)) {
+    return `Punta da 1 a ${MAX_BID} fiches per incrocio.`;
+  }
+  if (sum(values) > match.budgets[seat]) {
+    return `Hai ${match.budgets[seat]} fiches a disposizione in questo round.`;
   }
 
   match.bids[seat] = values;
   if (match.bids.includes(null)) return;
 
   const [first, second] = match.bids;
-  const awards = match.targets.map((cell, index) => {
+  match.targets.forEach((cell, index) => {
     const a = first[index];
     const b = second[index];
-    const owner = a === b ? 1 - match.proposer : Number(b > a);
-    match.board[cell] = owner;
-    return { cell, bids: [a, b], owner };
+    match.board[cell] = a === b ? 1 - match.proposer : Number(b > a);
   });
-  match.result = { round: match.round, awards };
+  match.lastTargets = match.targets;
 
   // All three positions are awarded before checking either player's lines.
-  for (const { cell, owner } of awards) {
+  for (const cell of match.targets) {
+    const owner = match.board[cell];
     const line = exactLine(match.board, cell, owner);
     if (line.length) match.winningLines[owner] = line;
   }
@@ -109,10 +113,16 @@ function bid(match, seat, values) {
     match.phase = 'propose';
     match.round++;
     match.proposer = 1 - match.proposer;
+    match.budgets = match.budgets.map((budget, index) =>
+      BASE_BUDGET + Math.floor((budget - sum(match.bids[index])) / 2));
   }
 
   match.bids = [null, null];
   match.targets = [];
+}
+
+function sum(values) {
+  return values.reduce((total, value) => total + value, 0);
 }
 
 function inside(row, col) {

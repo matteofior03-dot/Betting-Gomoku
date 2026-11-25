@@ -98,6 +98,7 @@ function paint() {
   byId('description').hidden = true;
   put('round', `Partita ${number} · Round ${round}`);
   put('own-name', own.name);
+  put('own-status', `Tu · ${state.budget} fiches nel round`);
   put('other-name', other?.name ?? 'Posto libero');
   put('own-chips', stones.filter(owner => owner === seat).length);
   put('other-chips', other ? stones.filter(owner => owner === 1 - seat).length : '–');
@@ -128,9 +129,9 @@ function paint() {
       'Il tuo avversario sta scegliendo le tre caselle su cui puntare.';
     boardStatus = mayPropose ? `Caselle selezionate: ${selection.length}/3` : 'Scelta delle caselle in corso';
   } else {
-    title = state.ownBid === null ? 'Punta sulle tre caselle' : 'Puntate confermate';
-    detail = state.ownBid === null ? 'Distribuisci fino a 10 gettoni. Le puntate si rivelano insieme.' :
-      `Hai puntato ${state.ownBid.join(' / ')} gettoni. Attendi l’avversario.`;
+    title = state.ownReady ? 'Puntate confermate' : 'Punta sulle tre caselle';
+    detail = state.ownReady ? 'Attendi che anche l’avversario confermi.' :
+      `Distribuisci fino a ${state.budget} fiches. Le puntate restano segrete.`;
     boardStatus = 'Puntate in corso';
   }
 
@@ -141,13 +142,13 @@ function paint() {
   const proposal = byId('submit-proposal');
   proposal.hidden = !mayPropose;
   proposal.disabled = busy || offline || selection.length !== 3;
-  byId('bid-controls').hidden = !bidding || state.ownBid !== null;
+  byId('bid-controls').hidden = !bidding || state.ownReady;
   if (bidding) {
     state.targets.forEach((cell, index) => put(`bid-label-${index + 1}`, `${index + 1} · ${coordinate(cell)}`));
+    bidInputs.forEach(input => { input.max = state.maxBid; });
     updateBudget();
   }
 
-  paintResult();
   const reset = byId('reset');
   reset.hidden = !other;
   reset.disabled = busy || offline;
@@ -185,7 +186,7 @@ function paintBoard(canPropose, players) {
   const colors = players.map(player => player.color);
   const eligible = canPropose ? eligibleCells() : new Set();
   const targets = state?.phase === 'bid' ? state.targets : canPropose ? selection : [];
-  const last = state?.result?.awards.map(award => award.cell) ?? [];
+  const last = state?.lastTargets ?? [];
   const winning = new Set(state?.winningLines.flat());
   cells.forEach((button, index) => {
     const occupant = state?.board[index] ?? null;
@@ -209,30 +210,13 @@ function bidValues() {
 
 function updateBudget() {
   const values = bidValues();
-  const valid = values.every(value => Number.isInteger(value) && value >= 1 && value <= state.budget);
+  const valid = values.every(value => Number.isInteger(value) && value >= 1 && value <= state.maxBid);
   const total = values.reduce((sum, value) => sum + (Number.isFinite(value) ? value : 0), 0);
   const remaining = state.budget - total;
-  put('budget', remaining < 0 ? `Riduci di ${-remaining} gettoni` : `Gettoni disponibili: ${remaining} / ${state.budget}`);
+  put('budget', remaining < 0 ? `Riduci di ${-remaining} fiches` : `Fiches disponibili: ${remaining} / ${state.budget}`);
   byId('budget').classList.toggle('invalid', remaining < 0);
   byId('submit-bid').disabled = busy || offline || !valid || remaining < 0;
   bidInputs.forEach(input => { input.disabled = busy || offline; });
-}
-
-function paintResult() {
-  const { result, seat } = state;
-  byId('result').hidden = !result;
-  if (!result) return;
-  put('result-title', `Esito round ${result.round}`);
-  const rows = result.awards.map(({ cell, bids, owner }) => {
-    const row = document.createElement('tr');
-    for (const value of [coordinate(cell), bids[seat], bids[1 - seat], owner === seat ? 'Te' : 'Rivale']) {
-      const data = document.createElement('td');
-      data.textContent = value;
-      row.append(data);
-    }
-    return row;
-  });
-  byId('result-rows').replaceChildren(...rows);
 }
 
 async function sync() {

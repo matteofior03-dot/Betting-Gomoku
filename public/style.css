@@ -82,12 +82,6 @@ input { display: block; width: 100%; min-width: 0; padding: 10px 11px; border-ra
 .bid-values input { padding-inline: 7px; }
 .panel .budget { margin: 0 0 10px; font-size: .82rem; font-weight: 650; }
 .budget.invalid { color: #8d3127; }
-.result { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
-.result h3 { font-size: .86rem; margin: 0 0 6px; }
-.result table { width: 100%; border-collapse: collapse; font-size: .78rem; }
-.result :is(th, td) { text-align: left; padding: 4px 3px; }
-.result th { color: var(--muted); font-weight: 650; }
-.result td { border-top: 1px solid var(--line); }
 .cell[aria-disabled="false"]:hover { background: #243e3220; }
 .cell.target span, .cell.target.center span {
   display: grid; place-items: center; width: 76%; height: auto; max-width: 33px;

@@ -26,8 +26,8 @@ Il server usa la porta indicata da Render in `PORT` e tiene le stanze in memoria
 ## Regole
 
 1. Il giocatore 1 inizia proponendo tre incroci liberi e consecutivi, in orizzontale, verticale o diagonale. Il ruolo di proponente si alterna a ogni round.
-2. Ciascuno ha dieci gettoni a round e invia in segreto una puntata di almeno un gettone per ogni incrocio. La somma delle tre puntate deve essere al massimo dieci e i gettoni avanzati non si accumulano. Per esempio, `5 + 3 + 2` è una ripartizione valida.
-3. Le tre puntate si rivelano insieme. Per ogni incrocio il valore più alto conquista la posizione. In caso di parità, la posizione va a chi non ha proposto quel round.
+2. Si parte con 10 fiches a testa. Dal secondo round ciascuno riceve 10 fiches più la metà di quelle che ha avanzato nel round precedente, arrotondata per difetto. Per esempio, con 5 fiches avanzate si riparte da 12. Ognuno punta da 1 a 10 fiches per ogni incrocio, entro il proprio budget.
+3. Per ogni incrocio il valore più alto conquista la posizione. In caso di parità, la posizione va a chi non ha proposto quel round. Il tabellone mostra le pedine assegnate. Gli importi delle puntate e i budget degli avversari restano privati.
 4. Dopo aver assegnato tutte e tre le posizioni, si controlla se qualcuno ha una linea di esattamente cinque pedine consecutive del proprio colore, in orizzontale, verticale o diagonale. Una fila di sei o più non conta. Se entrambi completano una linea valida nello stesso round oppure non resta alcun gruppo valido di tre caselle libere, è pareggio.
 5. Dopo la doppia conferma di reset il server svuota il tabellone, riparte dal giocatore 1 e scambia i colori nella stessa stanza.
 
@@ -39,4 +39,4 @@ Carica i file aggiornati mantenendo la stessa struttura e fai il commit sul bran
 
 - `game.js` gestisce la proposta, le puntate, l’assegnazione delle posizioni, la vittoria e il reset.
 - `server.js` serve l’interfaccia, gestisce le stanze e assegna credenziali private per ciascuna postazione.
-- `public/` contiene l’interfaccia web, sincronizzata ogni secondo con il server. Le puntate in corso sono visibili solo a chi le ha fatte, fino alla rivelazione simultanea.
+- `public/` contiene l’interfaccia web, sincronizzata ogni secondo con il server.
